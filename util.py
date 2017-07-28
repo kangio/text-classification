@@ -16,8 +16,16 @@ import pickle
 import os
 import numpy as np
 import pandas as pd
+
+
+
+# class Config:
+seq_length = 20
+batch_size = 128
+
+
 class DataLoader:
-    def __init__(self,is_training,batch_size,seq_length):
+    def __init__(self,is_training):
         self.batch_size=batch_size
         self.seq_length=seq_length
 
@@ -88,5 +96,5 @@ def _get_label_file(label_file):
         with open(label_file, 'rb') as f:
             return pickle.load(f)
 if __name__ == "__main__":
-    a=DataLoader(is_training=True,batch_size=10,seq_length=5)
+    a=DataLoader(is_training=True)
     print(a.next_batch())

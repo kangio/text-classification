@@ -14,7 +14,8 @@
 import numpy as np
 import os
 import pickle
-from model import Model
+from lstm_model import LSTMModel
+from cnn_model import CNNModel
 from util import DataLoader
 import tensorflow as tf
 import time
@@ -36,30 +37,44 @@ class CheckConfig(object):
   batch_size = 30
 
 
+lstm_save_dir = 'save/lstm'
+cnn_save_dir = 'save/cnn'
 
 config=CheckConfig
-data_loader = DataLoader(False, config.batch_size, config.num_steps)
+data_loader = DataLoader(False)
 vocab_size = data_loader.vocab_size
 label_size = data_loader.label_size
-model = Model(is_training=False, vocab_size=vocab_size, label_size=label_size, num_layers=2,config=config)
-def sample(text):
+seq_length=data_loader.seq_length
 
 
-
+def sample(model_name, text):
+    if model_name=='lstm':
+        model = LSTMModel(is_training=False, vocab_size=vocab_size, label_size=label_size, seq_length=seq_length)
+        save_dir=lstm_save_dir
+    else:
+        model = CNNModel(is_training=False, vocab_size=vocab_size, label_size=label_size, seq_length=seq_length)
+        save_dir=cnn_save_dir
 
     x = data_loader.transform(text)
 
     with tf.Session() as sess:
         saver =tf.train.Saver()
-        saver.restore(sess,'/Users/yangkang/PycharmProjects/TextClassification/save/model.ckpt')
-        # ckpt = tf.train.get_checkpoint_state(args.save_dir)
-        # if ckpt and ckpt.model_checkpoint_path:
-        #     saver.restore(sess, ckpt.model_checkpoint_path)
-        print(list(predict_label(sess, model, data_loader.labels, [x])))
+        # saver.restore(sess,'/Users/yangkang/PycharmProjects/TextClassification/save/cnn/model.ckpt')
+        ckpt = tf.train.get_checkpoint_state(save_dir)
+        if ckpt and ckpt.model_checkpoint_path:
+            saver.restore(sess, ckpt.model_checkpoint_path)
+        print(list(predict_label(sess, model, data_loader.labels, x)))
 
+def accuracy(model_name):
+    if model_name=='lstm':
+        model = LSTMModel(is_training=False, vocab_size=vocab_size, label_size=label_size, seq_length=seq_length)
+        save_dir=lstm_save_dir
+    else:
+        model = CNNModel(is_training=False, vocab_size=vocab_size, label_size=label_size, seq_length=seq_length)
+        save_dir=cnn_save_dir
 
+    # model = LSTMModel(is_training=False, vocab_size=vocab_size, label_size=label_size, seq_length=seq_length)
 
-def accuracy():
     # with open(os.path.join(args.save_dir, 'config.pkl'), 'rb') as f:
     #     saved_args = pickle.load(f)
     # with open(os.path.join(args.utils_dir, 'chars_vocab.pkl'), 'rb') as f:
@@ -72,8 +87,10 @@ def accuracy():
     with tf.Session() as sess:
         saver = tf.train.Saver(tf.all_variables())
 
-        saver.restore(sess, '/Users/yangkang/PycharmProjects/TextClassification/save/model.ckpt')
-
+        # saver.restore(sess, '/Users/yangkang/PycharmProjects/TextClassification/save/lstm/model.ckpt')
+        ckpt = tf.train.get_checkpoint_state(save_dir)
+        if ckpt and ckpt.model_checkpoint_path:
+            saver.restore(sess, ckpt.model_checkpoint_path)
         data = data_loader.tensor.copy()
         n_chunks = int(len(data) / config.batch_size)
         if len(data) % config.batch_size:
@@ -97,38 +114,31 @@ def accuracy():
         accuracy_total = correct_total / num_total
         print('total_num = {}, total_accuracy = {:.6f}'.format(int(num_total), accuracy_total))
 
-
-
-
-
 def predict_class(sess, model,data):
     x = np.array(data)
     feed = {model.input_data: x}
-    probs, state = sess.run([model.probs, model.final_state], feed_dict=feed)
+    probs= sess.run(model.probs, feed_dict=feed)
 
     results = np.argmax(probs, 1)
     return results
 
 
 
-
-
-
 def predict_label(sess, model, labels, text):
-    x = np.array(text)
+    x = np.array([text])
     feed = {model.input_data: x}
-    probs, state = sess.run([model.probs, model.final_state], feed_dict=feed)
-
+    probs= sess.run(model.probs, feed_dict=feed)
+    print(probs)
     results = []
-    # for index, i in enumerate(probs[0]):
-    #     if i > 0.02:
-    #         results.append(index)
+    for index, i in enumerate(probs[0]):
+        if i > 0.02:
+            results.append(index)
     #
-    results = np.argmax(probs, 1)
+    # results = np.argmax(probs, 1)
     id2labels = dict(zip(labels.values(), labels.keys()))
     labels = map(id2labels.get, results)
     return labels
 
 if __name__ == "__main__":
-    # sample("我冲了话费还没有到")
-    accuracy()
+    # sample('cnn',"实名制有有效期吗")
+    accuracy('cnn')
