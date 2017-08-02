@@ -16,6 +16,7 @@ import os
 import pickle
 from lstm_model import LSTMModel
 from cnn_model import CNNModel
+
 from util import DataLoader
 import tensorflow as tf
 import time
@@ -25,7 +26,7 @@ import time
 class CheckConfig(object):
   """Tiny config, for testing."""
   init_scale = 0.1
-  learning_rate = 1.0
+  learning_rate = 0.001
   max_grad_norm = 1
   num_layers = 1
   num_steps = 20
@@ -54,6 +55,8 @@ def sample(model_name, text):
     else:
         model = CNNModel(is_training=False, vocab_size=vocab_size, label_size=label_size, seq_length=seq_length)
         save_dir=cnn_save_dir
+    from embedding.corpus_segment import CorpusSegement
+    text=' '.join(CorpusSegement().single_segment(text))
 
     x = data_loader.transform(text)
 
@@ -140,5 +143,5 @@ def predict_label(sess, model, labels, text):
     return labels
 
 if __name__ == "__main__":
-    # sample('cnn',"实名制有有效期吗")
-    accuracy('cnn')
+    sample('lstm',"实名制有有效期吗")
+    # accuracy('lstm')

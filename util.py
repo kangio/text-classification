@@ -30,7 +30,7 @@ class DataLoader:
         self.seq_length=seq_length
 
         label_file=os.path.join('utils','labels.pkl')
-        vocab_file=os.path.join('utils','vocab.pkl')
+        vocab_file=os.path.join('utils','vocal.pkl')
         self.labels=_get_label_file(label_file)
         self.label_size=len(self.labels)
         if vocab_file is not None:
@@ -44,6 +44,7 @@ class DataLoader:
             train_file = os.path.join('data', 'train.csv')
 
             data = pd.read_csv(train_file, encoding='utf8')
+            self.text_length=len(data['text'])
             tensor_x = np.array(list(map(self.transform, data['text'])))
             tensor_y = np.array(list(map(self.labels.get, data['label'])))
             self.tensor = np.c_[tensor_x, tensor_y].astype(int)
