@@ -21,27 +21,13 @@ from util import DataLoader
 import tensorflow as tf
 import time
 
+from config import Config
 
 
-class CheckConfig(object):
-  """Tiny config, for testing."""
-  init_scale = 0.1
-  learning_rate = 0.001
-  max_grad_norm = 1
-  num_layers = 1
-  num_steps = 20
-  hidden_size = 128
-  # max_epoch = 1
-  # max_max_epoch = 1
-  keep_prob = 1.0
-  lr_decay = 0.5
-  batch_size = 30
 
 
-lstm_save_dir = 'save/lstm'
-cnn_save_dir = 'save/cnn'
 
-config=CheckConfig
+config=Config
 data_loader = DataLoader(False)
 vocab_size = data_loader.vocab_size
 label_size = data_loader.label_size
@@ -50,13 +36,14 @@ seq_length=data_loader.seq_length
 
 def sample(model_name, text):
     if model_name=='lstm':
-        model = LSTMModel(is_training=False, vocab_size=vocab_size, label_size=label_size, seq_length=seq_length)
-        save_dir=lstm_save_dir
+        model = LSTMModel(is_training=False, vocab_size=vocab_size, label_size=label_size)
+        save_dir=config.lstm_save_dir
     else:
-        model = CNNModel(is_training=False, vocab_size=vocab_size, label_size=label_size, seq_length=seq_length)
-        save_dir=cnn_save_dir
-    from embedding.corpus_segment import CorpusSegement
-    text=' '.join(CorpusSegement().single_segment(text))
+        model = CNNModel(is_training=False, vocab_size=vocab_size, label_size=label_size)
+        save_dir=config.cnn_save_dir
+    if config.word_mode=='word':
+        from embedding.corpus_segment import CorpusSegement
+        text=' '.join(CorpusSegement().single_segment(text))
 
     x = data_loader.transform(text)
 
@@ -70,11 +57,11 @@ def sample(model_name, text):
 
 def accuracy(model_name):
     if model_name=='lstm':
-        model = LSTMModel(is_training=False, vocab_size=vocab_size, label_size=label_size, seq_length=seq_length)
-        save_dir=lstm_save_dir
+        model = LSTMModel(is_training=False, vocab_size=vocab_size, label_size=label_size)
+        save_dir=config.lstm_save_dir
     else:
-        model = CNNModel(is_training=False, vocab_size=vocab_size, label_size=label_size, seq_length=seq_length)
-        save_dir=cnn_save_dir
+        model = CNNModel(is_training=False, vocab_size=vocab_size, label_size=label_size)
+        save_dir=config.cnn_save_dir
 
     # model = LSTMModel(is_training=False, vocab_size=vocab_size, label_size=label_size, seq_length=seq_length)
 
@@ -95,8 +82,8 @@ def accuracy(model_name):
         if ckpt and ckpt.model_checkpoint_path:
             saver.restore(sess, ckpt.model_checkpoint_path)
         data = data_loader.tensor.copy()
-        n_chunks = int(len(data) / config.batch_size)
-        if len(data) % config.batch_size:
+        n_chunks = int(len(data) / config.test_batch_size)
+        if len(data) % config.test_batch_size:
             n_chunks += 1
         data_list = np.array_split(data, n_chunks, axis=0)
 
@@ -134,7 +121,7 @@ def predict_label(sess, model, labels, text):
     print(probs)
     results = []
     for index, i in enumerate(probs[0]):
-        if i > 0.02:
+        if i > 0.06:
             results.append(index)
     #
     # results = np.argmax(probs, 1)
@@ -143,5 +130,4 @@ def predict_label(sess, model, labels, text):
     return labels
 
 if __name__ == "__main__":
-    sample('lstm',"实名制有有效期吗")
-    # accuracy('lstm')
+    sample(config.model,"还剩多少话费")

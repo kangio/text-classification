@@ -15,25 +15,19 @@
 import numpy as np
 import tensorflow as tf
 import pickle
+from config import Config
 
-class Config():
-    embeding_size=128
-    filter_sizes=[2]
-    # learning_rate=0.001
-    num_filters=32
-    sequence_length=20
-    embeding_path='/Users/yangkang/PycharmProjects/TextClassification/utils/embed_w2v.pkl'
 
 
 config=Config
 
 class CNNModel():
-    def __init__(self, is_training,vocab_size,label_size,seq_length):
+    def __init__(self, is_training,vocab_size,label_size):
         self.vocab_size=vocab_size
         self.label_size=label_size
         self.lr=tf.placeholder(tf.float32)
         with tf.name_scope('data_input'):
-            self.input_data=tf.placeholder(tf.int64, [None, seq_length])
+            self.input_data=tf.placeholder(tf.int64, [None, config.num_steps])
             self.targets=tf.placeholder(tf.int64,[None])
             self.target_onehot=tf.one_hot(self.targets,depth=label_size)
 
@@ -43,13 +37,12 @@ class CNNModel():
             with open(config.embeding_path,'rb') as cc:
                 embeding=tf.Variable(pickle.load(cc))
             embeded=tf.nn.embedding_lookup(embeding, self.input_data)
-            print(embeded)
             embeded=tf.expand_dims(embeded,axis=-1)
         total_result = []
 
         for index,filter_size in enumerate(config.filter_sizes):
             with tf.variable_scope('conv-pooling%d'%index):
-                filter_shape=[filter_size,config.embeding_size,1,config.num_filters]
+                filter_shape=[filter_size,config.hidden_size,1,config.num_filters]
                 W=tf.Variable(tf.truncated_normal(filter_shape,stddev=0.1),name='W')
                 tf.summary.histogram(name='conW',values=W)
                 b=tf.Variable(tf.constant(0.1,shape=[config.num_filters],dtype=tf.float32),name='b')
@@ -65,7 +58,6 @@ class CNNModel():
         with tf.variable_scope('outputlayer'):
             num_filters_total = config.num_filters * len(config.filter_sizes)
             pooled_flat=tf.reshape(self.h_pool,shape=[-1,num_filters_total])
-            print(pooled_flat)
             if is_training:
                 pooled_flat=tf.nn.dropout(pooled_flat,keep_prob=0.6)
             W=tf.Variable(tf.truncated_normal([num_filters_total,label_size]),name='W')
@@ -85,8 +77,6 @@ class CNNModel():
             self.correct_pred=tf.cast(tf.equal(self.predict,tf.argmax(self.target_onehot,1)),dtype=tf.float32)
             self.correct_num = tf.reduce_sum(tf.cast(self.correct_pred, tf.float32))
             self.accuracy=tf.reduce_mean(self.correct_num,name='accuracy')
-
-
 
 if __name__ == "__main__":
     pass

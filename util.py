@@ -16,23 +16,27 @@ import pickle
 import os
 import numpy as np
 import pandas as pd
-
+from config import Config
 
 
 # class Config:
-seq_length = 20
-batch_size = 128
 
+
+config=Config
 
 class DataLoader:
     def __init__(self,is_training):
-        self.batch_size=batch_size
-        self.seq_length=seq_length
+        if is_training:
+            self.batch_size=config.train_batch_size
+        else:
+            self.batch_size=config.test_batch_size
+        self.seq_length=config.seq_length
 
         label_file=os.path.join('utils','labels.pkl')
         vocab_file=os.path.join('utils','vocal.pkl')
         self.labels=_get_label_file(label_file)
         self.label_size=len(self.labels)
+
         if vocab_file is not None:
             with open(vocab_file, 'rb') as f:
                 self.chars = pickle.load(f)
@@ -91,8 +95,13 @@ class DataLoader:
 def _get_label_file(label_file):
     if not os.path.exists(label_file):
 
-        #TODO 写入序列化label文件
-        pass
+        a=pd.read_csv('data/train.csv')
+        a=list(set(list(a['label'])))
+        mdict=dict(zip(a,range(len(a))))
+        with open(label_file,'wb') as f:
+            pickle.dump(mdict,f)
+        return mdict
+
     else:
         with open(label_file, 'rb') as f:
             return pickle.load(f)
