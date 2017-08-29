@@ -14,13 +14,12 @@
 
 class Config:
 
-    model='cnn'
-    word_mode='single'         #otherwise 'word'
+
 
 
 
     seq_length = 20
-    train_batch_size = 128
+    batch_size = 128
     learning_rate = 0.001
     max_grad_norm = 5
     decay_rate = 0.9
@@ -32,15 +31,11 @@ class Config:
     hidden_size = 128
     keep_prob = 1.0
     lr_decay = 0.5
-    test_batch_size = 30
 
     #cnn参数
     filter_sizes=[2]
     num_filters=32
     sequence_length=20
-    embeding_path='/Users/yangkang/PycharmProjects/TextClassification/utils/embed_w2v.pkl'
 
-    lstm_save_dir = 'save/lstm'
-    cnn_save_dir = 'save/cnn'
 
 

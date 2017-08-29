@@ -11,24 +11,18 @@
 @file: test.py.py
 @time: 2017/7/26 下午3:29
 """
-import numpy as np
-import os
-import pickle
-from lstm_model import LSTMModel
-from cnn_model import CNNModel
-
-from util import DataLoader
-import tensorflow as tf
 import time
 
+import numpy as np
+import tensorflow as tf
+
+from cnn_model import CNNModel
 from config import Config
-
-
-
-
+from lstm_model import LSTMModel
+from util import DataLoader,segment
 
 config=Config
-data_loader = DataLoader(False)
+data_loader = DataLoader(is_char=True,is_training=False)
 vocab_size = data_loader.vocab_size
 label_size = data_loader.label_size
 seq_length=data_loader.seq_length
@@ -42,8 +36,7 @@ def sample(model_name, text):
         model = CNNModel(is_training=False, vocab_size=vocab_size, label_size=label_size)
         save_dir=config.cnn_save_dir
     if config.word_mode=='word':
-        from embedding.corpus_segment import CorpusSegement
-        text=' '.join(CorpusSegement().single_segment(text))
+        text=' '.join(segment(text))
 
     x = data_loader.transform(text)
 
@@ -82,24 +75,21 @@ def accuracy(model_name):
         if ckpt and ckpt.model_checkpoint_path:
             saver.restore(sess, ckpt.model_checkpoint_path)
         data = data_loader.tensor.copy()
-        n_chunks = int(len(data) / config.test_batch_size)
-        if len(data) % config.test_batch_size:
-            n_chunks += 1
-        data_list = np.array_split(data, n_chunks, axis=0)
+
+        data_list = np.array_split(data, 1, axis=0)
 
         correct_total = 0.0
         num_total = 0.0
-        for m in range(n_chunks):
-            start = time.time()
-            x = data_list[m][:, :-1]
-            y = data_list[m][:, -1]
-            results = predict_class(sess=sess,model=model,data=x)
-            correct_num = np.sum(results==y)
-            end = time.time()
-            print('batch {}/{} cost time {:.3f}, sub_accuracy = {:.6f}'.format(m+1, n_chunks, end-start, correct_num*1.0/len(x)))
+        start = time.time()
+        x = data[:, :-1]
+        y = data[:, -1]
+        results = predict_class(sess=sess,model=model,data=x)
+        correct_num = np.sum(results==y)
+        end = time.time()
+        print('cost time {:.3f}, sub_accuracy = {:.6f}'.format( end-start, correct_num*1.0/len(x)))
 
-            correct_total += correct_num
-            num_total += len(x)
+        correct_total += correct_num
+        num_total += len(x)
 
         accuracy_total = correct_total / num_total
         print('total_num = {}, total_accuracy = {:.6f}'.format(int(num_total), accuracy_total))
