@@ -108,7 +108,6 @@ class CNNModel():
             sess.run(init)
 
             for e in range(num_epochs):
-
                 self.data.reset_batch_pointer()
                 total_correct_nums = 0
                 for b in range(self.data.num_batches):
