@@ -36,8 +36,8 @@ def write_csv(per,is_char=True):
         test_index = [i for i in index if i not in train_index]
         train = data.loc[train_index]
         test = data.loc[test_index]
-        train.to_csv('./data/train.csv', index=False)
-        test.to_csv('./data/test.csv', index=False)
+        train.to_csv('./data/train.csv', index=False,encoding='utf-8')
+        test.to_csv('./data/test.csv', index=False,encoding='utf-8')
         if not is_char:
             for i in ['data.csv', 'train.csv', 'test.csv']:
                 df = pd.read_csv('./data/' + i,encoding='utf-8')
@@ -59,6 +59,10 @@ def segment(corpus, HMM=False):
 
 
 def w2v(size=128, is_char=True):
+    if not os.path.exists('./embedding'):
+        os.mkdir('./embedding')
+    if not os.path.exists('./save'):
+        os.mkdir('./save')
     if is_char:
         if not os.path.exists('./embedding/single_w2v_vec.pkl'):
             corpus = codecs.open('./utils/corpus.txt','r',encoding='utf-8').readlines()
@@ -103,9 +107,9 @@ def glv(path, size, mode):
 
 # 数据处理主体部分
 def data_prepare(is_char, reset=False, percent=0.9):
-    if reset or not os.path.exists('./data/train.csv'):
-        print('开始拆分数据集...')
-        write_csv(percent,is_char)
+    # if reset or not os.path.exists('./data/train.csv'):
+    #     print('开始拆分数据集...')
+    write_csv(percent,is_char)
     # 生成分词后的数据集
 
 

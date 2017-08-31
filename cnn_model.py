@@ -17,6 +17,7 @@ import tensorflow as tf
 import pickle
 from util import segment
 import time
+import os
 
 class CNNModel():
     def __init__(self,
@@ -91,6 +92,9 @@ class CNNModel():
             self.correct_pred = tf.cast(tf.equal(self.prediction, tf.argmax(self.target_onehot, 1)), dtype=tf.float32)
             self.correct_num = tf.reduce_sum(tf.cast(self.correct_pred, tf.float32))
             self.accuracy = tf.reduce_mean(self.correct_num, name='accuracy')
+        if not os.path.exists('./save/cnn'):
+            if not os.path.exists('./save'):os.mkdir('./save')
+            os.mkdir('./save/cnn')
         self.saver = tf.train.Saver(tf.global_variables())
 
     def fit(self,

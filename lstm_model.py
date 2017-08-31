@@ -72,6 +72,7 @@ class LSTMModel():
             self.correct_num = tf.reduce_sum(tf.cast(self.correct_pred, tf.float32))
             self.accuracy = tf.reduce_mean(tf.cast(self.correct_pred, tf.float32))
         if not os.path.exists('./save/lstm'):
+            if not os.path.exists('./save'):os.mkdir('./save')
             os.mkdir('./save/lstm')
         self.saver = tf.train.Saver(tf.global_variables())
 
