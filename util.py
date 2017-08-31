@@ -16,11 +16,11 @@ import pickle
 import os
 import numpy as np
 import pandas as pd
-from config import Config
 import random
 import jieba
 import gensim
-
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.feature_selection import SelectKBest, chi2
 
 # import glove
 # class Config:
@@ -40,11 +40,11 @@ def write_csv(per,is_char=True):
         test.to_csv('./data/test.csv', index=False)
         if not is_char:
             for i in ['data.csv', 'train.csv', 'test.csv']:
-                df = pd.read_csv('./data/' + i)
+                df = pd.read_csv('./data/' + i,encoding='utf-8')
                 old_text = df['text']
                 new_text = [' '.join(i) for i in segment(old_text)]
                 label = df['label']
-                pd.DataFrame({'text': new_text, 'label': label}).to_csv('./data/w' + i, index=False)
+                pd.DataFrame({'text': new_text, 'label': label}).to_csv('./data/w' + i, index=False,encoding='utf-8')
 
 
 # 分词模块
@@ -61,7 +61,7 @@ def segment(corpus, HMM=False):
 def w2v(size=128, is_char=True):
     if is_char:
         if not os.path.exists('./embedding/single_w2v_vec.pkl'):
-            corpus = codecs.open('./utils/corpus.txt').readlines()
+            corpus = codecs.open('./utils/corpus.txt','r',encoding='utf-8').readlines()
             input_list = [list(i.strip()) for i in corpus]
             model = gensim.models.Word2Vec(sentences=input_list, size=size, min_count=3)
             model.save('./embedding/single_w2v_model')
@@ -81,7 +81,7 @@ def w2v(size=128, is_char=True):
                 with open(seg, 'rb') as pk:
                     input_list = pickle.load(pk)
             else:
-                cor = codecs.open('./utils/corpus.txt').readlines()
+                cor = codecs.open('./utils/corpus.txt','r',encoding='utf-8').readlines()
                 cor = [i.strip() for i in cor]
                 input_list = segment(cor)
                 with open(seg, 'wb') as f:
@@ -117,42 +117,43 @@ def data_prepare(is_char, reset=False, percent=0.9):
         with open('./utils/labels.pkl', 'wb') as f:
             pickle.dump(mdict, f)
     w2v(is_char=is_char)
-from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.feature_selection import SelectKBest, chi2
+
 
 # 独立的特征选择
 
 class CorpusLoader():
     def __init__(self,chi=None):
         write_csv(0.9,is_char=False)
-        train_df=pd.read_csv('./data/wtrain.csv')
+        train_df=pd.read_csv('./data/wtrain.csv',encoding='utf-8')
 
         train_text=list(train_df['text'])
         train_label=list(train_df['label'])
 
-        test_df=pd.read_csv('./data/wtest.csv')
+        test_df=pd.read_csv('./data/wtest.csv',encoding='utf-8')
         test_text=list(test_df['text'])
         test_label=list(test_df['label'])
-        vec=TfidfVectorizer()
-        self.train_X=vec.fit_transform(train_text).toarray()
-        print(self.train_X.shape)
-        self.test_X=vec.transform(test_text).toarray()
-        print(self.test_X.shape)
+        self.vec=TfidfVectorizer()
+        self.train_X=self.vec.fit_transform(train_text).toarray()
+        self.test_X=self.vec.transform(test_text).toarray()
         with open('./utils/labels.pkl', 'rb') as f:
             self.labels = pickle.load(f)
         self.label_size = len(self.labels)
+        self.to_label=dict(zip(self.labels.values(),self.labels.keys()))
         self.train_y=np.array(list(map(self.labels.get,train_label)))
         self.test_y=np.array(list(map(self.labels.get,test_label)))
 
-        self.vocab=vec.get_feature_names()
+        self.vocab=self.vec.get_feature_names()
         if chi:
-            ch2 = SelectKBest(chi2, k=chi)
-            self.train_X = ch2.fit_transform(self.train_X, self.train_y)
-            self.test_X = ch2.transform(self.test_X)
+            self.ch2 = SelectKBest(chi2, k=chi)
+            self.train_X = self.ch2.fit_transform(self.train_X, self.train_y)
+            self.test_X = self.ch2.transform(self.test_X)
     def get_train_data(self):
         return self.train_X,self.train_y
     def get_test_data(self):
         return self.test_X,self.test_y
+    def to_tfidf(self,text):
+        text=' '.join(segment(text))
+        return self.ch2.transform(self.vec.transform([text]))
 
 
 
